@@ -1,0 +1,15 @@
+package com.isometricmultimedia.binaryconvert;
+
+public class Converters {
+	
+	private String strConvert;
+	
+	public Converters(String strConvert){
+		this.strConvert = strConvert;
+	}
+	
+	public static convert(){
+		return null;
+	}
+
+}

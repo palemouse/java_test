@@ -1,0 +1,9 @@
+package com.isometricmultimedia.binaryconvert;
+
+public class Converters {
+	
+	public convert(String toConvert){
+		return null;
+	}
+
+}

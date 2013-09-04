@@ -1,0 +1,10 @@
+package com.isometricmultimedia.binaryconvert;
+
+public class Converters (String fromString, Int fromInt, String fromBin ){
+	
+	
+	
+	return null;
+	
+
+}
