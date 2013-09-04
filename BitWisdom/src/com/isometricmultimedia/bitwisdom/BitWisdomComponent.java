@@ -1,0 +1,233 @@
+package com.isometricmultimedia.bitwisdom;
+
+import java.awt.BorderLayout;
+import java.awt.Canvas;
+import java.awt.Dimension;
+import java.util.Random;
+
+import javax.swing.JFrame;
+
+public class BitWisdomComponent extends Canvas implements Runnable {
+
+	public static final int WIDTH = 256;
+	public static final int HEIGHT = WIDTH / 12 * 9; // dimension ratio 12x9
+	public static final int SCALE = 3;
+	public static final String NAME = "BitWisdom";
+	public static final int MAX_CHALLENGES = 10;
+	public static final int DIGITS = 10;
+	public static final int MIN_RND = 20; //lowest random decimal to generate
+
+	public static String[] allChallenges = new String[MAX_CHALLENGES];
+	
+	private JFrame frame;
+
+	public boolean running = false;
+	public double tickcount = 0;
+	public int xPos = 0;
+	public int yPos = 0;
+	public int difficulty = 0; // difficulty is 0 - 5, hard to easy
+
+	public BitWisdomComponent() {
+		setMinimumSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
+		setMaximumSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
+		setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
+
+		frame = new JFrame(NAME);
+
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setLayout(new BorderLayout());
+
+		frame.add(this, BorderLayout.CENTER);
+		frame.pack();
+
+		frame.setResizable(false);
+		frame.setLocationRelativeTo(null);
+		frame.setVisible(true);
+	}
+
+	public synchronized void start() {
+		running = true;
+		new Thread(this).start();
+	}
+
+	public synchronized void stop() {
+		running = false;
+	}
+
+	public void run() {
+		long lastTime = System.nanoTime();
+		double nsPerTick = 1000000000D / 60D; // How many nanoseconds per tick (16,000,000 roughly) //use D for double math, could also use .0
+
+		int ticks = 0;
+		int frames = 0;
+
+		long lastTimer = System.currentTimeMillis(); // tells us when 1 second has passed
+		double delta = 0; // unprocessed nanoseconds
+
+		init();
+
+		while (running) {
+			long now = System.nanoTime();
+			delta += (now - lastTime) / nsPerTick;
+			lastTime = now;
+			boolean shouldRender = true;
+
+			while (delta >= 1) {
+				ticks++;
+				tick();
+				delta -= 1;
+				shouldRender = true;
+			}
+
+			try {
+				Thread.sleep(2);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+
+			if (shouldRender) {
+				frames++;
+				render();
+			}
+
+			if (System.currentTimeMillis() - lastTimer >= 1000) {
+				lastTimer += 1000;
+				frames = 0;
+				ticks = 0;
+			}
+		}
+
+	}
+
+	
+	public void init() {
+		System.out.println("--INIT--");
+		
+		difficulty = 0;
+		allChallenges = prepBinaries(difficulty, false, null);
+		
+		for (int i = 0; i < allChallenges.length; i++) System.out.println(allChallenges[i]);
+
+	}
+
+	public void tick() {
+		tickcount++;
+		
+	}
+
+	public void render() {
+		
+		xPos += 1;
+		yPos += 1;
+		
+		if (xPos >= 500){
+			xPos = 0;
+			allChallenges = prepBinaries(difficulty, true, allChallenges);
+			for (int i = 0; i < allChallenges.length; i++) System.out.println(allChallenges[i]);
+		}
+
+
+	}
+
+	private static String[] prepBinaries(int difficulty, boolean shift, String[] challenge) {
+	/*
+	 * STRING FORMAT: CHALLENGE(BINARY)-CHALLENGE(DECIMAL)-OPERAND(BINARY)-OPERAND(DECIMAL)-BITWISEOPERATOR(INT)-ANSWER(DEC)
+	 * 
+	 * FOR ANSWERS:
+	 * 0 - NOT
+	 * 1 - AND
+	 * 2 - OR
+	 * 3 - XOR 
+	 */
+		
+		String[] ch = new String[MAX_CHALLENGES];
+		Random rnd1 = new Random();
+		Random rnd2 = new Random();
+		
+		int maxRnd = (int) (Math.pow(2, DIGITS - difficulty) - (MIN_RND + 1)); //max random can only be 2^(digits - difficulty) - (Minimum Random + 1). this will make sure it is always 1 below the exp function since the min is added.
+		int currDec1;
+		int currDec2;
+		String binaryRev1 = "";
+		String binaryRev2 = "";
+		String binary1 = "";
+		String binary2 = "";
+		int bit;		
+		
+		if (!shift) {
+			System.out.println("Max Random Value: " + maxRnd + " -- Difficulty: " + difficulty + " -- Total Challenges: " + MAX_CHALLENGES);
+
+			for (int i = 0; i < MAX_CHALLENGES; i++) { //Cycle through total elements in the challenge array. only 3 will be shown at any given time most likely.
+				currDec1 = rnd1.nextInt(maxRnd) + MIN_RND;
+				currDec2 = rnd2.nextInt(maxRnd) + MIN_RND;
+				
+				bit = 1;
+
+				binaryRev1 = "";
+				binary1 = "";
+				
+				binaryRev2 = "";
+				binary2 = "";
+
+				for (int j = 0; j < DIGITS; j++) {
+					binaryRev1 += Integer.toString((((currDec1 & bit) == 0) ? 0 : 1)); //puts a reverse binary representation of the random decimal (currDec1) in Rev1
+					binaryRev2 += Integer.toString((((currDec2 & bit) == 0) ? 0 : 1)); //puts a reverse binary representation of the random decimal (currDec2) in Rev2
+					bit *= 2;
+				}
+
+				for (int k = binaryRev1.length() - 1; k >= 0; k--) { // Reverse the string in Rev1 and place it in binary1
+					binary1 += binaryRev1.charAt(k);
+				}
+				
+				for (int l = binaryRev2.length() - 1; l >= 0; l--) { // Reverse the string in Rev2 and place it in binary2
+					binary2 += binaryRev2.charAt(l);
+				}
+
+				ch[i] = binary1 + "-" + Integer.toString(currDec1) + "-" + binary2 + "-" + Integer.toString(currDec2); //cat binary 1 & 2 with their decimal representations in format laid out above
+
+			}
+			System.out.println("Not shifted");
+			return ch; //return the array we created
+		}
+		//If just shifting
+		System.out.println("-------------");
+		int endCH = challenge.length - 1; //always the final element in the array
+		
+		for (int i = 0; i < (challenge.length - 1); i++){
+			ch[i] = challenge[i + 1];
+		}
+		
+		currDec1 = rnd1.nextInt(maxRnd) + MIN_RND;
+		currDec2 = rnd1.nextInt(maxRnd) + MIN_RND;
+		bit = 1;
+		
+		ch[endCH] = "";
+		binaryRev1 = "";
+		binaryRev2 = "";
+		binary1 = "";
+		binary2 = "";
+		
+		for (int j = 0; j < DIGITS; j++) {
+			binaryRev1 += Integer.toString((((currDec1 & bit) == 0) ? 0 : 1));
+			binaryRev2 += Integer.toString((((currDec2 & bit) == 0) ? 0 : 1));
+			bit *= 2;
+		}
+
+		for (int k = binaryRev1.length() - 1; k >= 0; k--) {
+			binary1 += binaryRev1.charAt(k);
+		}
+		
+		for (int l = binaryRev2.length() - 1; l >= 0; l--) {
+			binary2 += binaryRev2.charAt(l);
+		}
+		
+		ch[endCH] = binary1 + "-" + Integer.toString(currDec1) + "-" + binary2 + "-" + Integer.toString(currDec2); //perform the same process as above but only on the last question (newest in the array), fill the null after the shift
+		
+		return ch; //return entire challenge sequence as a new array
+
+	}
+
+	public static void main(String[] args) {
+		new BitWisdomComponent().start();
+	}
+
+}
