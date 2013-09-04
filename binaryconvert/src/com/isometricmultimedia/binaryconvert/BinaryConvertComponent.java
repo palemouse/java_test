@@ -12,7 +12,7 @@ public class BinaryConvertComponent {
 
 	public static void main(String[] args) {
 
-		difficulty = 2;
+		difficulty = 0;
 		challenge = prepChallenges(difficulty);
 
 		for (int i = 0; i < challenge.length; i++) {
